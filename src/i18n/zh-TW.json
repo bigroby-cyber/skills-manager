@@ -419,7 +419,10 @@
       "apply": "同步 {{count}} 項",
       "noAgents": "沒有已安裝並啟用的 Agent。",
       "allSynced": "選取的 Skill 都已同步到這個 Agent"
-    }
+    },
+    "lastUsed": "{{when}}使用",
+    "lastUsedNever": "近期未使用",
+    "lastUsedTooltip": "根據 Claude Code 工作階段記錄中最近一次使用。「近期未使用」表示記錄中未找到，並不代表從未使用。"
   },
   "install": {
     "title": "安裝 Skills",

@@ -4275,3 +4275,17 @@ mod tests {
         assert!(repo.store.get_targets_for_skill("s1").unwrap().is_empty());
     }
 }
+
+/// Last time each skill was seen in Claude Code's session logs, keyed by
+/// lower-case skill name, as Unix milliseconds. Skills not present were not
+/// observed in the logs (which does not prove they were never used).
+#[tauri::command]
+pub async fn get_skill_last_used(
+) -> Result<std::collections::HashMap<String, i64>, AppError> {
+    let dirs = crate::core::skill_usage::claude_code_projects_dirs();
+    let map = tauri::async_runtime::spawn_blocking(move || {
+        crate::core::skill_usage::scan_last_used(&dirs)
+    })
+    .await?;
+    Ok(map)
+}

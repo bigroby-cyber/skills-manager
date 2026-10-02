@@ -1,0 +1,58 @@
+name: Build Windows (versione italiana)
+
+# Costruisce l'installer Windows della versione modificata (interfaccia in
+# italiano + ultimo utilizzo delle skill) e lo pubblica come release del fork.
+on:
+  workflow_dispatch:
+  push:
+    branches: [italiano]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7 # stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - uses: swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build installer (NSIS, senza firma aggiornamenti)
+        shell: bash
+        run: npx tauri build --bundles nsis --config '{"bundle":{"createUpdaterArtifacts":false}}'
+
+      - name: Publish release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          TAG="v${VERSION}-it.${GITHUB_RUN_NUMBER}"
+          EXE=$(ls src-tauri/target/release/bundle/nsis/*-setup.exe | head -n1)
+          OUT="skills-manager_${VERSION}-it_x64-setup.exe"
+          cp "$EXE" "$OUT"
+          gh release create "$TAG" "$OUT" \
+            --target "$GITHUB_SHA" \
+            --title "Skills Manager ${VERSION} (italiano) build ${GITHUB_RUN_NUMBER}" \
+            --notes "Versione personale: interfaccia in italiano e indicazione dell'ultimo utilizzo delle skill (dai registri di Claude Code)."
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: skills-manager-it-setup
+          path: src-tauri/target/release/bundle/nsis/*-setup.exe

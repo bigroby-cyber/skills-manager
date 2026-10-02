@@ -462,7 +462,10 @@
       "apply": "Sync {{count}}",
       "noAgents": "No installed and enabled agents.",
       "allSynced": "Every selected skill is already on this agent"
-    }
+    },
+    "lastUsed": "Used {{when}}",
+    "lastUsedNever": "No recent use",
+    "lastUsedTooltip": "Last use seen in Claude Code's session logs. \"No recent use\" means it was not found in those logs, not that it was never used."
   },
   "install": {
     "title": "Install Skills",

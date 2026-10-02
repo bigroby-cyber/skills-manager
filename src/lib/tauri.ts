@@ -428,6 +428,12 @@ export const importExistingSkill = (sourcePath: string, name?: string) =>
 export const importAllDiscovered = () =>
   invoke<void>("import_all_discovered");
 
+// ── Usage ──
+
+/** Skill name (lower-case) → last use seen in Claude Code logs, Unix ms. */
+export const getSkillLastUsed = () =>
+  invoke<Record<string, number>>("get_skill_last_used");
+
 // ── Browse ──
 
 export const fetchLeaderboard = (board: string) =>

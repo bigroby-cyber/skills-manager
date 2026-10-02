@@ -133,8 +133,20 @@ function centralDirName(skill: ManagedSkill) {
   return skill.central_path.split(/[\\/]/).filter(Boolean).pop() || skill.name;
 }
 
+function formatRelativeTime(ms: number, lang: string) {
+  const rtf = new Intl.RelativeTimeFormat(lang, { numeric: "auto" });
+  const diffSec = Math.round((ms - Date.now()) / 1000);
+  const abs = Math.abs(diffSec);
+  if (abs < 60) return rtf.format(diffSec, "second");
+  if (abs < 3600) return rtf.format(Math.round(diffSec / 60), "minute");
+  if (abs < 86400) return rtf.format(Math.round(diffSec / 3600), "hour");
+  if (abs < 86400 * 30) return rtf.format(Math.round(diffSec / 86400), "day");
+  if (abs < 86400 * 365) return rtf.format(Math.round(diffSec / (86400 * 30)), "month");
+  return rtf.format(Math.round(diffSec / (86400 * 365)), "year");
+}
+
 export function MySkills() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const {
     viewedPreset,
@@ -184,6 +196,25 @@ export function MySkills() {
   const [presetSkillOrder, setPresetSkillOrder] = useState<string[]>([]);
 
   const viewedPresetName = viewedPreset?.name || t("mySkills.currentPresetFallback");
+
+  // Last use per skill, read from Claude Code's session logs.
+  const [lastUsed, setLastUsed] = useState<Record<string, number>>({});
+  useEffect(() => {
+    api.getSkillLastUsed().then(setLastUsed).catch(() => {});
+  }, [skills]);
+  const lastUsedOf = (skill: ManagedSkill) =>
+    lastUsed[skill.name.toLowerCase()] ?? lastUsed[centralDirName(skill).toLowerCase()];
+  const lastUsedLabel = (skill: ManagedSkill) => {
+    const ms = lastUsedOf(skill);
+    return ms
+      ? t("mySkills.lastUsed", { when: formatRelativeTime(ms, i18n.language) })
+      : t("mySkills.lastUsedNever");
+  };
+  const lastUsedTitle = (skill: ManagedSkill) => {
+    const ms = lastUsedOf(skill);
+    const exact = ms ? `${new Date(ms).toLocaleString(i18n.language)} — ` : "";
+    return exact + t("mySkills.lastUsedTooltip");
+  };
 
   // Fetch sort order whenever active preset changes
   useEffect(() => {
@@ -1633,6 +1664,13 @@ export function MySkills() {
                         {sourceIcon(skill.source_type)}
                         {sourceTypeLabel(skill)}
                       </span>
+                      <span className="text-faint">·</span>
+                      <span
+                        className="truncate text-[12px] text-muted"
+                        title={lastUsedTitle(skill)}
+                      >
+                        {lastUsedLabel(skill)}
+                      </span>
                       {enabledInPreset && (
                         <>
                           <span className="text-faint">·</span>
@@ -1778,6 +1816,9 @@ export function MySkills() {
                   <span className="inline-flex items-center gap-1 text-[13px] text-muted">
                     {sourceIcon(skill.source_type)}
                     {sourceTypeLabel(skill)}
+                  </span>
+                  <span className="text-[13px] text-muted" title={lastUsedTitle(skill)}>
+                    {lastUsedLabel(skill)}
                   </span>
                   {enabledInPreset && (
                     <span className="text-[13px] font-medium text-amber-600 dark:text-amber-400/80">
